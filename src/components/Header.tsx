@@ -10,11 +10,15 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/5 bg-ink/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3 md:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <Image src="/logo.jpg" alt="AromaLux" width={44} height={44} className="rounded-md" />
-          <span className="hidden font-display text-lg tracking-wide text-white sm:block">
-            AROMA<span className="text-gold">LUX</span>
-          </span>
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logo-text.webp"
+            alt="AromaLux"
+            width={1400}
+            height={188}
+            priority
+            className="h-8 w-auto md:h-9"
+          />
         </Link>
 
         <nav className="hidden items-center gap-8 lg:flex">
