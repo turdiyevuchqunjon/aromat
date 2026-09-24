@@ -1,27 +1,17 @@
+/** Lid ma'lumotlari — bazada emas, shifrlangan Purchase havolasi ichida saqlanadi */
 export interface LeadRecord {
   id: string;
-  token: string;
   createdAt: number;
 
   name: string;
   phone: string;
-  message?: string;
 
-  // Meta matching / attribution data captured at the moment of the lead
+  // Lid qoldirilgan paytdagi Meta matching / attribution ma'lumotlari
   fbp?: string;
   fbc?: string;
-  fbclid?: string;
   clientIp?: string;
   clientUserAgent?: string;
   eventSourceUrl?: string;
-  leadEventId: string;
-
-  // Purchase state
-  status: "new" | "purchased";
-  purchaseAmount?: number;
-  purchaseCurrency?: string;
-  purchasedAt?: number;
-  purchaseEventId?: string;
 }
 
 export interface CapiUserData {

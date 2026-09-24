@@ -6,7 +6,8 @@ const GRAPH_VERSION = "v21.0";
  * Meta Conversions API'ga event yuboradi.
  * Xujjat: https://developers.facebook.com/docs/marketing-api/conversions-api
  */
-export async function sendCapiEvent(payload: CapiEventPayload): Promise<void> {
+/** Meta qabul qilsa true qaytaradi. Hech qachon xato tashlamaydi. */
+export async function sendCapiEvent(payload: CapiEventPayload): Promise<boolean> {
   const pixelId = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
   const accessToken = process.env.FB_CAPI_ACCESS_TOKEN;
 
@@ -15,7 +16,7 @@ export async function sendCapiEvent(payload: CapiEventPayload): Promise<void> {
       "NEXT_PUBLIC_FB_PIXEL_ID / FB_CAPI_ACCESS_TOKEN sozlanmagan — CAPI event yuborilmadi:",
       payload.event_name
     );
-    return;
+    return false;
   }
 
   const url = `https://graph.facebook.com/${GRAPH_VERSION}/${pixelId}/events`;
@@ -30,18 +31,25 @@ export async function sendCapiEvent(payload: CapiEventPayload): Promise<void> {
     body.test_event_code = testCode;
   }
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(8000),
+    });
 
-  const json = await res.json().catch(() => null);
+    const json = await res.json().catch(() => null);
 
-  if (!res.ok) {
-    console.error("Meta CAPI xatosi:", res.status, JSON.stringify(json));
-  } else {
+    if (!res.ok) {
+      console.error("Meta CAPI xatosi:", res.status, JSON.stringify(json));
+      return false;
+    }
     console.log(`Meta CAPI: ${payload.event_name} yuborildi (event_id=${payload.event_id})`, JSON.stringify(json));
+    return true;
+  } catch (err) {
+    console.error("Meta CAPI so'rovi bajarilmadi:", payload.event_name, err);
+    return false;
   }
 }
 

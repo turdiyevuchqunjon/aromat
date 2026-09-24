@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
 
 const CURRENCY = process.env.NEXT_PUBLIC_CURRENCY || "UZS";
 
 export default function PurchaseForm({ token }: { token: string }) {
-  const router = useRouter();
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,10 +22,10 @@ export default function PurchaseForm({ token }: { token: string }) {
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/purchase/${token}`, {
+      const res = await fetch("/api/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: value, currency: CURRENCY }),
+        body: JSON.stringify({ token, amount: value }),
       });
 
       if (!res.ok) {
@@ -36,7 +34,6 @@ export default function PurchaseForm({ token }: { token: string }) {
       }
 
       setDone(true);
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
     } finally {

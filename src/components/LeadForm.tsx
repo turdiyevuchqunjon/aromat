@@ -78,13 +78,19 @@ export default function LeadForm() {
       });
 
       if (!res.ok) {
-        throw new Error("So'rov yuborilmadi");
+        const data = await res.json().catch(() => null);
+        setError(
+          data?.error ||
+            "Xatolik yuz berdi, iltimos qaytadan urinib ko'ring yoki telefon orqali bog'laning."
+        );
+        setLoading(false);
+        return;
       }
 
       router.push("/rahmat");
     } catch (err) {
-      console.error(err);
-      setError("Xatolik yuz berdi, iltimos qaytadan urinib ko'ring yoki telefon orqali bog'laning.");
+      console.error("Lead yuborishda tarmoq xatosi:", err);
+      setError("Internet aloqasini tekshirib, qaytadan urinib ko'ring.");
       setLoading(false);
     }
   }

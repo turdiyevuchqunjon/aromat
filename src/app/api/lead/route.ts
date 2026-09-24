@@ -1,70 +1,88 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveLead } from "@/lib/redis";
 import { sendCapiEvent, getClientIp } from "@/lib/meta";
 import { sendTelegramMessage, buildLeadTelegramMessage } from "@/lib/telegram";
-import { generateLeadToken, generateEventId, normalizeAndHash, normalizePhoneForHash } from "@/lib/hash";
+import { encodeLeadToken } from "@/lib/leadLink";
+import { generateEventId, normalizeAndHash, normalizePhoneForHash } from "@/lib/hash";
 import type { LeadRecord } from "@/lib/types";
 
+const MAX_NAME_LENGTH = 100;
+const MAX_MESSAGE_LENGTH = 1000;
+
+function optionalString(value: unknown, maxLength = 500): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, maxLength) : undefined;
+}
+
 export async function POST(req: NextRequest) {
+  let body: Record<string, unknown>;
   try {
-    const body = await req.json();
-    const { name, phone, message, fbp, fbc, fbclid, eventId, pageUrl } = body as {
-      name?: string;
-      phone?: string;
-      message?: string;
-      fbp?: string;
-      fbc?: string;
-      fbclid?: string;
-      eventId?: string;
-      pageUrl?: string;
-    };
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Noto'g'ri so'rov" }, { status: 400 });
+  }
 
-    if (!name || !phone) {
-      return NextResponse.json({ error: "Ism va telefon raqami kerak" }, { status: 400 });
+  const name = optionalString(body.name, MAX_NAME_LENGTH);
+  const phone = optionalString(body.phone, 30);
+  const message = optionalString(body.message, MAX_MESSAGE_LENGTH);
+  const fbp = optionalString(body.fbp);
+  const fbc = optionalString(body.fbc);
+  const eventId = optionalString(body.eventId, 100);
+  const pageUrl = optionalString(body.pageUrl, 2000);
+
+  if (!name) {
+    return NextResponse.json({ error: "Iltimos, ismingizni kiriting" }, { status: 400 });
+  }
+  const phoneDigits = phone?.replace(/\D/g, "") ?? "";
+  if (!/^998\d{9}$/.test(phoneDigits)) {
+    return NextResponse.json({ error: "Telefon raqam noto'g'ri formatda" }, { status: 400 });
+  }
+
+  const id = generateEventId("lead");
+  const leadEventId = eventId || generateEventId("lead_evt");
+  const clientIp = getClientIp(req.headers);
+  const clientUserAgent = req.headers.get("user-agent") || undefined;
+
+  // Havola qisqa bo'lishi uchun URL'ning query qismi olib tashlanadi (fbclid allaqachon fbc ichida)
+  let eventSourceUrl = pageUrl;
+  try {
+    if (pageUrl) {
+      const u = new URL(pageUrl);
+      eventSourceUrl = `${u.origin}${u.pathname}`;
     }
+  } catch {
+    eventSourceUrl = undefined;
+  }
 
-    const id = generateEventId("lead");
-    const token = generateLeadToken();
-    const leadEventId = eventId || generateEventId("lead_evt");
-    const clientIp = getClientIp(req.headers);
-    const clientUserAgent = req.headers.get("user-agent") || undefined;
+  const lead: LeadRecord = {
+    id,
+    createdAt: Date.now(),
+    name,
+    phone: phone!,
+    fbp,
+    fbc,
+    clientIp,
+    clientUserAgent,
+    eventSourceUrl,
+  };
 
-    const lead: LeadRecord = {
-      id,
-      token,
-      createdAt: Date.now(),
-      name,
-      phone,
-      message,
-      fbp,
-      fbc,
-      fbclid,
-      clientIp,
-      clientUserAgent,
-      eventSourceUrl: pageUrl,
-      leadEventId,
-      status: "new",
-    };
+  // Barcha lid ma'lumotlari shifrlanib havolaning o'ziga joylanadi — baza kerak emas
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin).replace(/\/$/, "");
+  const purchaseLink = `${siteUrl}/xarid/${encodeLeadToken(lead)}`;
 
-    await saveLead(lead);
-
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
-    const purchaseLink = `${siteUrl}/admin/purchase/${token}`;
-
-    // Telegramga yuborish (kutmasdan davom etadi, lekin xatoni logga yozadi)
-    await sendTelegramMessage({
-      text: buildLeadTelegramMessage({ name, phone, message, purchaseLink }),
-    });
-
-    // Meta CAPI — Lead eventi (Pixel'dagi bilan bir xil event_id, dedup uchun)
-    await sendCapiEvent({
+  // Telegram xabari va Meta CAPI parallel yuboriladi; ikkalasi ham xato tashlamaydi.
+  const [telegramSent] = await Promise.all([
+    sendTelegramMessage({
+      text: buildLeadTelegramMessage({ name, phone: phone!, message, purchaseLink }),
+    }),
+    sendCapiEvent({
       event_name: "Lead",
       event_time: Math.floor(Date.now() / 1000),
       event_id: leadEventId,
-      event_source_url: pageUrl,
+      event_source_url: eventSourceUrl,
       action_source: "website",
       user_data: {
-        ph: [normalizePhoneForHash(phone)],
+        ph: [normalizePhoneForHash(phone!)],
         client_ip_address: clientIp,
         client_user_agent: clientUserAgent,
         fbp,
@@ -74,11 +92,17 @@ export async function POST(req: NextRequest) {
       custom_data: {
         content_name: "AromaLux konsultatsiya so'rovi",
       },
-    });
+    }),
+  ]);
 
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Lead saqlashda xato:", err);
-    return NextResponse.json({ error: "Server xatosi" }, { status: 500 });
+  // Lid Telegramga yetib bormasa, u yo'qoladi — mijozga xato ko'rsatamiz.
+  if (!telegramSent) {
+    console.error("Lid Telegramga yetib bormadi:", { name, phone });
+    return NextResponse.json(
+      { error: "So'rovni qabul qilib bo'lmadi. Iltimos, telefon orqali bog'laning." },
+      { status: 503 }
+    );
   }
+
+  return NextResponse.json({ ok: true });
 }

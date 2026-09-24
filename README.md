@@ -5,8 +5,8 @@ Bu loyiha aromalux.uz uslubidagi aroma-marketing sayti bo'lib, quyidagi funksiya
 - Next.js 14 (App Router) + TypeScript + Tailwind
 - Bosh sahifa: Hero, foyda kartalar, diffuzor katalogi, hid katalogi, biz haqimizda, lid formasi
 - Forma to'ldirilganda: `/rahmat` sahifasiga o'tadi, 10 soniyadan keyin Telegram profilingizga yo'naltiradi
-- Har bir lid: Telegram botga yuboriladi, xabar ichida **hashlangan (taxminlanmaydigan) shaxsiy havola** bo'ladi
-- Havolani bossangiz `/admin/purchase/[token]` sahifasi ochiladi — u yerda to'lov summasini kiritasiz
+- Har bir lid Telegram botga yuboriladi. Xabarda **shifrlangan havola** bo'ladi: mijozning `_fbp`/`_fbc` cookie'lari, IP, User-Agent va telefoni AES-256-GCM bilan shifrlanib havolaning ichiga joylanadi (baza va admin panel kerak emas)
+- Havolani bossangiz `/xarid/[token]` sahifasi ochiladi, u yerda to'lov summasini kiritasiz
 - Summani kiritganingizda **Meta Conversions API (CAPI)** orqali **Purchase** eventi yuboriladi — mijozning saytga birinchi kelgan paytidagi `_fbp` / `_fbc` cookie va IP/User-Agent bilan, shu orqali Meta bu xaridni to'g'ri reklama/kampaniyaga bog'laydi va **ROAS** to'g'ri hisoblanadi
 - Lid yuborilganda ham Pixel (brauzer) va CAPI (server) orqali bir xil `event_id` bilan **Lead** eventi yuboriladi — bu ikkalanishning (deduplication) oldini oladi va event match quality'ni oshiradi
 
@@ -15,7 +15,6 @@ Bu loyiha aromalux.uz uslubidagi aroma-marketing sayti bo'lib, quyidagi funksiya
 | Xizmat | Nima uchun | Qayerdan olinadi |
 |---|---|---|
 | Vercel | Saytni joylashtirish (hosting) | vercel.com |
-| Upstash Redis | Lidlar va hashlangan linklarni saqlash | console.upstash.com — "Create Database" → "REST API" bo'limidan URL va TOKEN |
 | Meta Pixel + CAPI token | Reklama tracking | business.facebook.com → Events Manager → Pixel → Settings (Pixel ID) va "Conversions API" → "Generate access token" |
 | Telegram bot | Lidlar xabarini olish | @BotFather orqali `/newbot` — token beradi. Chat ID olish uchun botga bir marta yozing, so'ng `https://api.telegram.org/bot<TOKEN>/getUpdates` ochib `chat.id` ni ko'ring |
 
@@ -35,9 +34,7 @@ Sayt `http://localhost:3000` da ochiladi.
 - `NEXT_PUBLIC_FB_PIXEL_ID`, `FB_CAPI_ACCESS_TOKEN` — Meta'dan
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — Telegram botdan
 - `NEXT_PUBLIC_TELEGRAM_REDIRECT_USERNAME` — rahmat sahifasidan yo'naltiriladigan Telegram username (masalan sizning shaxsiy yoki bot username'ingiz, `@` belgisisiz)
-- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — Upstash'dan
-- `ADMIN_SECRET` — `/admin` sahifalariga kirish paroli, o'zingiz kuchli parol o'ylab toping
-- `LEAD_LINK_SECRET` — tasodifiy uzun matn (masalan `openssl rand -hex 32` buyrug'i bilan generatsiya qiling)
+- `LEAD_LINK_SECRET` — havolalarni shifrlash kaliti, `openssl rand -hex 32` bilan yarating. Uni o'zgartirsangiz eski havolalar ishlamay qoladi
 
 ## 3. Vercel'ga joylashtirish (deploy)
 
@@ -50,11 +47,10 @@ Sayt `http://localhost:3000` da ochiladi.
 ## 4. Ishlash tartibi (oqim)
 
 1. Mijoz saytdagi formani to'ldiradi → `/rahmat` sahifasiga o'tadi → 10 soniyadan keyin Telegram'ga yo'naltiriladi
-2. Lid ma'lumotlari (ism, tel, `_fbp`, `_fbc`, IP, User-Agent) Upstash Redis'da saqlanadi, shu bilan bir vaqtda Telegram botga xabar + hashlangan admin havola yuboriladi, Meta'ga "Lead" eventi ketadi
+2. Lid ma'lumotlari (ism, tel, `_fbp`, `_fbc`, IP, User-Agent) shifrlanib havolaga joylanadi va Telegram botga yuboriladi, Meta'ga "Lead" eventi ketadi
 3. Siz mijoz bilan gaplashib, sotuv amalga oshsa — Telegram xabaridagi havolani bosasiz
-4. `/admin` sahifasiga parol bilan kirasiz (birinchi marta `/admin/login`)
-5. Lid tafsilotlarini ko'rasiz, to'lov summasini kiritasiz → tizim shu lidning saqlangan `_fbp`/`_fbc`/IP ma'lumotlari bilan Meta CAPI orqali "Purchase" eventini yuboradi
-6. Meta Ads Manager'da bu xarid tegishli reklama/kampaniyaga bog'lanadi, ROAS to'g'ri hisoblanadi
+4. Lid tafsilotlarini ko'rasiz, to'lov summasini kiritasiz → tizim havoladagi `_fbp`/`_fbc`/IP ma'lumotlari bilan Meta CAPI orqali "Purchase" eventini yuboradi
+5. Meta Ads Manager'da bu xarid tegishli reklama/kampaniyaga bog'lanadi, ROAS to'g'ri hisoblanadi
 
 ## 5. Test qilish
 
