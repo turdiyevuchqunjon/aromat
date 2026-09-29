@@ -1,4 +1,5 @@
-import type { CapiEventPayload } from "./types";
+import type { CapiEventPayload, CapiUserData, LeadRecord } from "./types";
+import { normalizeAndHash, normalizePhoneForHash } from "./hash";
 
 const GRAPH_VERSION = "v21.0";
 
@@ -60,4 +61,22 @@ export function getClientIp(headers: Headers): string | undefined {
   const realIp = headers.get("x-real-ip");
   if (realIp) return realIp;
   return undefined;
+}
+
+/**
+ * Lid ma'lumotlaridan CAPI user_data yig'adi (Lead va Purchase uchun bir xil).
+ * Ism va mamlakat qo'shilishi Event Match Quality'ni oshiradi.
+ */
+export function buildLeadUserData(lead: LeadRecord): CapiUserData {
+  const firstName = lead.name.trim().split(/\s+/)[0];
+  return {
+    ph: [normalizePhoneForHash(lead.phone)],
+    fn: firstName ? [normalizeAndHash(firstName)] : undefined,
+    country: [normalizeAndHash("uz")],
+    client_ip_address: lead.clientIp,
+    client_user_agent: lead.clientUserAgent,
+    fbp: lead.fbp,
+    fbc: lead.fbc,
+    external_id: [normalizeAndHash(lead.id)],
+  };
 }

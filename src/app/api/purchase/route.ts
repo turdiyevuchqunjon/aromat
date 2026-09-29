@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendCapiEvent } from "@/lib/meta";
+import { sendCapiEvent, buildLeadUserData } from "@/lib/meta";
 import { decodeLeadToken } from "@/lib/leadLink";
-import { normalizeAndHash, normalizePhoneForHash } from "@/lib/hash";
 
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
@@ -34,14 +33,7 @@ export async function POST(req: NextRequest) {
     event_id: purchaseEventId,
     event_source_url: lead.eventSourceUrl,
     action_source: "website",
-    user_data: {
-      ph: [normalizePhoneForHash(lead.phone)],
-      client_ip_address: lead.clientIp,
-      client_user_agent: lead.clientUserAgent,
-      fbp: lead.fbp,
-      fbc: lead.fbc,
-      external_id: [normalizeAndHash(lead.id)],
-    },
+    user_data: buildLeadUserData(lead),
     custom_data: {
       currency,
       value: amount,

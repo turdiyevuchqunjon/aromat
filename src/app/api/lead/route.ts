@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendCapiEvent, getClientIp } from "@/lib/meta";
+import { sendCapiEvent, getClientIp, buildLeadUserData } from "@/lib/meta";
 import { sendTelegramMessage, buildLeadTelegramMessage } from "@/lib/telegram";
 import { encodeLeadToken } from "@/lib/leadLink";
-import { generateEventId, normalizeAndHash, normalizePhoneForHash } from "@/lib/hash";
+import { generateEventId } from "@/lib/hash";
 import type { LeadRecord } from "@/lib/types";
 
 const MAX_NAME_LENGTH = 100;
@@ -70,32 +70,12 @@ export async function POST(req: NextRequest) {
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin).replace(/\/$/, "");
   const purchaseLink = `${siteUrl}/xarid/${encodeLeadToken(lead)}`;
 
-  // Telegram xabari va Meta CAPI parallel yuboriladi; ikkalasi ham xato tashlamaydi.
-  const [telegramSent] = await Promise.all([
-    sendTelegramMessage({
-      text: buildLeadTelegramMessage({ name, phone: phone!, message, purchaseLink }),
-    }),
-    sendCapiEvent({
-      event_name: "Lead",
-      event_time: Math.floor(Date.now() / 1000),
-      event_id: leadEventId,
-      event_source_url: eventSourceUrl,
-      action_source: "website",
-      user_data: {
-        ph: [normalizePhoneForHash(phone!)],
-        client_ip_address: clientIp,
-        client_user_agent: clientUserAgent,
-        fbp,
-        fbc,
-        external_id: [normalizeAndHash(id)],
-      },
-      custom_data: {
-        content_name: "AromaLux konsultatsiya so'rovi",
-      },
-    }),
-  ]);
+  const telegramSent = await sendTelegramMessage({
+    text: buildLeadTelegramMessage({ name, phone: phone!, message, purchaseLink }),
+  });
 
-  // Lid Telegramga yetib bormasa, u yo'qoladi — mijozga xato ko'rsatamiz.
+  // Lid Telegramga yetib bormasa, u yo'qoladi — mijozga xato ko'rsatamiz va Metaga Lead yubormaymiz
+  // (aks holda mijoz qayta urinsa Metada takroriy lidlar paydo bo'ladi).
   if (!telegramSent) {
     console.error("Lid Telegramga yetib bormadi:", { name, phone });
     return NextResponse.json(
@@ -103,6 +83,19 @@ export async function POST(req: NextRequest) {
       { status: 503 }
     );
   }
+
+  // Xato tashlamaydi — CAPI ishlamasa ham lid Telegramda saqlangan.
+  await sendCapiEvent({
+    event_name: "Lead",
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: leadEventId,
+    event_source_url: eventSourceUrl,
+    action_source: "website",
+    user_data: buildLeadUserData(lead),
+    custom_data: {
+      content_name: "AromaLux konsultatsiya so'rovi",
+    },
+  });
 
   return NextResponse.json({ ok: true });
 }

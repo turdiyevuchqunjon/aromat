@@ -57,11 +57,6 @@ export default function LeadForm() {
     const pageUrl = typeof window !== "undefined" ? window.location.href : undefined;
 
     try {
-      // Pixel orqali (client-side) Lead — bir xil event_id bilan CAPI dedup ishlaydi
-      if (typeof window !== "undefined" && window.fbq) {
-        window.fbq("track", "Lead", {}, { eventID: eventId });
-      }
-
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,6 +80,11 @@ export default function LeadForm() {
         );
         setLoading(false);
         return;
+      }
+
+      // Pixel Lead faqat lid qabul qilingandan keyin — bir xil event_id bilan CAPI dedup ishlaydi
+      if (typeof window !== "undefined" && window.fbq) {
+        window.fbq("track", "Lead", {}, { eventID: eventId });
       }
 
       router.push("/rahmat");

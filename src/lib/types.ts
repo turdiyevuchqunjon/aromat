@@ -17,6 +17,8 @@ export interface LeadRecord {
 export interface CapiUserData {
   em?: string[]; // hashed email(s)
   ph?: string[]; // hashed phone(s)
+  fn?: string[]; // hashed first name
+  country?: string[]; // hashed ISO country code
   client_ip_address?: string;
   client_user_agent?: string;
   fbp?: string;
