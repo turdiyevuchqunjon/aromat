@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const TELEGRAM_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_REDIRECT_USERNAME || "aromalux_admin";
+const TELEGRAM_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_REDIRECT_USERNAME || "aromaluxdiffuzer";
 const REDIRECT_SECONDS = 10;
 
 export default function RahmatRedirect() {
