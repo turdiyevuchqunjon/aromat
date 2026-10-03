@@ -6,7 +6,7 @@ import MetaPixel from "@/components/MetaPixel";
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-sans" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-display" });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aromalux.uz";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://aromat-three.vercel.app/";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
