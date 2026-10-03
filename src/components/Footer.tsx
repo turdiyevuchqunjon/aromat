@@ -43,8 +43,12 @@ export default function Footer() {
           <div>
             <div className="section-label">Manzillar</div>
             <ul className="mt-3 space-y-2 text-white/70">
-              {ADDRESSES.map((address) => (
-                <li key={address}>{address}</li>
+              {ADDRESSES.map((location) => (
+                <li key={location.city}>
+                  <a href="#manzillar" className="transition hover:text-gold">
+                    {location.address}
+                  </a>
+                </li>
               ))}
             </ul>
           </div>
