@@ -68,7 +68,16 @@ export async function POST(req: NextRequest) {
 
   // Barcha lid ma'lumotlari shifrlanib havolaning o'ziga joylanadi — baza kerak emas
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin).replace(/\/$/, "");
-  const purchaseLink = `${siteUrl}/xarid/${encodeLeadToken(lead)}`;
+  let purchaseLink: string;
+  try {
+    purchaseLink = `${siteUrl}/xarid/${encodeLeadToken(lead)}`;
+  } catch (err) {
+    console.error("Purchase havolasini yaratib bo'lmadi:", err);
+    return NextResponse.json(
+      { error: "So'rovni qabul qilib bo'lmadi. Iltimos, telefon orqali bog'laning." },
+      { status: 500 }
+    );
+  }
 
   const telegramSent = await sendTelegramMessage({
     text: buildLeadTelegramMessage({ name, phone: phone!, message, purchaseLink }),
