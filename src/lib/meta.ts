@@ -9,7 +9,7 @@ const GRAPH_VERSION = "v21.0";
  */
 /** Meta qabul qilsa true qaytaradi. Hech qachon xato tashlamaydi. */
 export async function sendCapiEvent(payload: CapiEventPayload): Promise<boolean> {
-  const pixelId = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
+  const pixelId = process.env.NEXT_PUBLIC_FB_PIXEL_ID || "1849543222869522";
   const accessToken = process.env.FB_CAPI_ACCESS_TOKEN;
 
   if (!pixelId || !accessToken) {

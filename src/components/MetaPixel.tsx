@@ -2,7 +2,7 @@
 
 import Script from "next/script";
 
-const PIXEL_ID = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
+const PIXEL_ID = 1849543222869522;
 
 /**
  * Standart Meta Pixel bazaviy kodi + PageView.
