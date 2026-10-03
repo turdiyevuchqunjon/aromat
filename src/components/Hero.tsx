@@ -1,12 +1,7 @@
 import Image from "next/image";
 import LeadForm from "./LeadForm";
+import ProductCarousel from "./ProductCarousel";
 import { PHONES, TELEGRAM } from "@/lib/contacts";
-
-const PRODUCT_IMAGES = [
-  { src: "/01.jpeg", alt: "Pro 200 aroma diffuzer — qisqa yo'riqnoma", width: 1024, height: 1280 },
-  { src: "/02.jpeg", alt: "AromaLux biznes uchun aroma diffuzer", width: 1254, height: 1254 },
-  { src: "/03.jpeg", alt: "AromaLux avtomobil uchun aroma diffuzer", width: 1254, height: 1254 },
-];
 
 export default function Hero() {
   return (
@@ -46,19 +41,8 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 items-start gap-6 md:grid-cols-3">
-          {PRODUCT_IMAGES.map((image, index) => (
-            <Image
-              key={image.src}
-              src={image.src}
-              alt={image.alt}
-              width={image.width}
-              height={image.height}
-              priority={index === 0}
-              sizes="(min-width: 768px) 33vw, 100vw"
-              className="h-auto w-full rounded-2xl border border-ink-line shadow-2xl"
-            />
-          ))}
+        <div className="mt-14">
+          <ProductCarousel />
         </div>
 
         <div
